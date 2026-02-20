@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, switchMap, shareReplay } from 'rxjs';
+import { BehaviorSubject, Observable, switchMap, shareReplay, tap } from 'rxjs';
 import {
   CreatePortfolioRequest,
   PortfolioResponse,
@@ -34,14 +34,20 @@ export class PortfolioService {
   }
 
   create(body: CreatePortfolioRequest): Observable<PortfolioResponse> {
-    return this.http.post<PortfolioResponse>(this.baseUrl, body);
+    return this.http
+      .post<PortfolioResponse>(this.baseUrl, body)
+      .pipe(tap(() => this.refresh$.next()));
   }
 
   update(id: number, body: UpdatePortfolioRequest): Observable<PortfolioResponse> {
-    return this.http.patch<PortfolioResponse>(`${this.baseUrl}/${id}`, body);
+    return this.http
+      .patch<PortfolioResponse>(`${this.baseUrl}/${id}`, body)
+      .pipe(tap(() => this.refresh$.next()));
   }
 
   delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.http
+      .delete<void>(`${this.baseUrl}/${id}`)
+      .pipe(tap(() => this.refresh$.next()));
   }
 }

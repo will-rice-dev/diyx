@@ -92,7 +92,6 @@ export class PortfolioListComponent {
     this.portfolioService.delete(portfolio.id).subscribe({
       next: () => {
         this.toast.success(`"${portfolio.name}" deleted.`);
-        this.portfolioService.refresh();
       },
     });
   }

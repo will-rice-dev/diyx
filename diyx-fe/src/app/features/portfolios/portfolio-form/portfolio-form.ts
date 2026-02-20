@@ -166,7 +166,6 @@ export class PortfolioFormComponent implements OnInit {
       this.toast.success(
         this.isEditMode() ? 'Portfolio updated.' : 'Portfolio created.',
       );
-      this.portfolioService.refresh();
       this.router.navigate(['/portfolios', p.id]);
     });
   }
