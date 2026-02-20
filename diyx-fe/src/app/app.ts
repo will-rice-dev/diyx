@@ -1,16 +1,13 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ToastComponent } from './shared/components/toast/toast';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, ToastComponent],
   template: `
-    <h1>Hello, {{ title() }}</h1>
-
+    <app-toast />
     <router-outlet />
   `,
-  styles: [],
 })
-export class App {
-  protected readonly title = signal('diyx-fe');
-}
+export class App {}
