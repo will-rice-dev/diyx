@@ -20,7 +20,7 @@ export class PortfolioService {
     switchMap(() =>
       this.http.get<PortfolioResponse[]>(this.baseUrl).pipe(retryWithBackoff(3, 500)),
     ),
-    shareReplay(1),
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   refresh(): void {
