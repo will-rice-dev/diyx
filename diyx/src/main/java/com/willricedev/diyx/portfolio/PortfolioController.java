@@ -3,6 +3,12 @@ package com.willricedev.diyx.portfolio;
 import com.willricedev.diyx.portfolio.dto.CreatePortfolioRequest;
 import com.willricedev.diyx.portfolio.dto.PortfolioResponse;
 import com.willricedev.diyx.portfolio.dto.UpdatePortfolioRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +20,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/portfolios")
+@Tag(name = "Portfolios", description = "Portfolio management endpoints")
+@SecurityRequirement(name = "bearerAuth")
 public class PortfolioController {
 
     private final PortfolioService portfolioService;
@@ -23,6 +31,12 @@ public class PortfolioController {
     }
 
     @PostMapping
+    @Operation(summary = "Create a portfolio")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Portfolio created successfully"),
+        @ApiResponse(responseCode = "400", description = "Validation error"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public ResponseEntity<PortfolioResponse> create(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody CreatePortfolioRequest request) {
@@ -31,30 +45,53 @@ public class PortfolioController {
     }
 
     @GetMapping
+    @Operation(summary = "List all portfolios for the current user")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Portfolios retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public ResponseEntity<List<PortfolioResponse>> findAll(
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(portfolioService.findAll(userDetails.getUsername()));
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get a portfolio by ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Portfolio retrieved successfully"),
+        @ApiResponse(responseCode = "400", description = "Portfolio not found or access denied"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public ResponseEntity<PortfolioResponse> findById(
             @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable Long id) {
+            @Parameter(description = "Portfolio ID") @PathVariable Long id) {
         return ResponseEntity.ok(portfolioService.findById(userDetails.getUsername(), id));
     }
 
     @PatchMapping("/{id}")
+    @Operation(summary = "Update a portfolio")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Portfolio updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Validation error, portfolio not found, or access denied"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public ResponseEntity<PortfolioResponse> update(
             @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable Long id,
+            @Parameter(description = "Portfolio ID") @PathVariable Long id,
             @Valid @RequestBody UpdatePortfolioRequest request) {
         return ResponseEntity.ok(portfolioService.update(userDetails.getUsername(), id, request));
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a portfolio")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Portfolio deleted successfully"),
+        @ApiResponse(responseCode = "400", description = "Portfolio not found or access denied"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public ResponseEntity<Void> delete(
             @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable Long id) {
+            @Parameter(description = "Portfolio ID") @PathVariable Long id) {
         portfolioService.delete(userDetails.getUsername(), id);
         return ResponseEntity.noContent().build();
     }
