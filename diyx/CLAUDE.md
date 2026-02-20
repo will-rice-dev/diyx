@@ -2,55 +2,57 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Build & Run Commands
+## Commands
 
 ```bash
 # Build
 ./mvnw clean package
 
-# Run application
+# Run
 ./mvnw spring-boot:run
 
-# Run all tests
+# Run tests
 ./mvnw test
 
 # Run a single test class
 ./mvnw test -Dtest=DiyxApplicationTests
 
-# Run a single test method
-./mvnw test -Dtest=DiyxApplicationTests#contextLoads
-
-# Build native image (GraalVM)
-./mvnw native:compile
-
-# Inspect dependencies
-./mvnw dependency:tree
+# Compile only
+./mvnw compile
 ```
 
 ## Architecture
 
-Spring Boot 4 REST API (Java 25, Maven) with SQLite database.
+**DIYX** is a Spring Boot 4.0.2 REST API for user authentication and settings management, using Java 25.
 
-**Package:** `com.willricedev.diyx`
+### Tech Stack
+- **Spring Boot** with Spring Security and Spring Data JPA
+- **SQLite** (file at `model/diyx.db`) managed by **Flyway** migrations
+- **JWT** (JJWT) for stateless auth; **BCrypt** for password hashing
+- **Hibernate** with `SQLiteDialect`
 
-**Layered structure within feature packages** (currently only `user/`):
-- `*Controller` — REST endpoints, HTTP status codes, `@ExceptionHandler`
-- `*Service` — Business logic, password encoding (BCrypt)
-- `*Repository` — Spring Data JPA interface
-- `User` — JPA `@Entity`, `@PrePersist` for timestamps
-- `dto/` — Request/Response POJOs with validation annotations
+### Package Structure (`com.willricedev.diyx`)
+- `auth/` — `JwtService` (token creation/validation), `JwtAuthFilter` (per-request JWT extraction)
+- `config/` — `SecurityConfig` (filter chain, public vs protected routes), `FlywayConfig`
+- `user/` — `User` entity, `UserRepository`, `UserService`, `UserController`, `SettingsController`, and `dto/` subpackage
 
-**Security:** Spring Security 7 configured in `config/SecurityConfig.java` — stateless, no CSRF, no form login, no HTTP Basic. Only `/api/auth/**` is public; all other routes require authentication.
+### Request Flow
+1. `JwtAuthFilter` extracts the Bearer token from `Authorization` header and sets the `SecurityContext`
+2. `SecurityConfig` permits `/api/auth/**` publicly; all other routes require authentication
+3. Controllers delegate to `UserService` for business logic and `UserRepository` for persistence
 
-**Database:** SQLite at `./model/diyx.db` (excluded from git). Schema managed exclusively by Flyway (`src/main/resources/db/migration/`). `ddl-auto=none`. The `InstantConverter` handles `Instant` ↔ `String` conversion required by SQLite's lack of a native timestamp type.
+### Key Endpoints
+- `POST /api/auth/register` — create user, returns JWT
+- `POST /api/auth/login` — validate credentials, returns JWT
+- `GET /api/users/me/settings` — get current user settings (JWT required)
+- `PATCH /api/users/me/settings` — update settings (JWT required)
 
-**Current endpoints:**
-- `POST /api/auth/register` — creates user (201)
-- `POST /api/auth/login` — authenticates user (200)
+### Database
+- Schema managed by Flyway; `spring.jpa.hibernate.ddl-auto=none`
+- Migrations in `src/main/resources/db/migration/`
+- `InstantConverter` bridges Java `Instant` to SQLite text storage
 
-## Key Constraints
-
-- **Java 25** — use modern Java features freely
-- **SQLite limitations** — no native timestamp type; use `InstantConverter` for `Instant` fields. New JPA entities with `Instant` fields need `@Convert(converter = InstantConverter.class)`.
-- **Flyway** — all schema changes go in a new versioned migration file (`V{n}__description.sql`), never modify existing migrations.
-- **Stateless API** — no sessions; future auth should use tokens (JWT), not cookies.
+### Configuration (`application.properties`)
+- `app.jwt.secret` — Base64-encoded secret (replace in production via env var)
+- `app.jwt.expiration-ms=86400000` — 24-hour token lifetime
+- `spring.datasource.url=jdbc:sqlite:./model/diyx.db`
